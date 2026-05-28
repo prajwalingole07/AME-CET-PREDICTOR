@@ -16,8 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- SheetJS Library for Premium Client-Side Excel Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Styled SheetJS Library for Premium Client-Side Excel Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="style.css">
@@ -110,6 +110,25 @@
                         </div>
                     </div>
 
+                    <!-- Seat Types Selection (Multi-select) -->
+                    <div class="input-group full-width">
+                        <label><i class="fa-solid fa-map-location-dot"></i> Seat Types (Select One or More)</label>
+                        <div class="checkbox-group">
+                            <label class="glass-checkbox">
+                                <input type="checkbox" id="seatHomeState" value="HomeState" checked>
+                                <span><i class="fa-solid fa-house-chimney"></i> Home State</span>
+                            </label>
+                            <label class="glass-checkbox">
+                                <input type="checkbox" id="seatOtherState" value="OtherState" checked>
+                                <span><i class="fa-solid fa-map"></i> Other State</span>
+                            </label>
+                            <label class="glass-checkbox">
+                                <input type="checkbox" id="seatStateLevel" value="StateLevel" checked>
+                                <span><i class="fa-solid fa-globe"></i> State Level</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- City Preference (Multi-select) -->
                     <div class="input-group full-width">
                         <label><i class="fa-solid fa-location-dot"></i> City Preference (Select Multiple)</label>
@@ -145,6 +164,34 @@
                                 </div>
                                 <div class="multiselect-options" id="branchOptionsContainer">
                                     <!-- Options injected dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Filter Options -->
+                <div class="advanced-settings-section card">
+                    <div class="advanced-settings-header" id="advancedSettingsHeader">
+                        <h3><i class="fa-solid fa-sliders"></i> Advanced Filter Options</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="useCustomRange" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="advanced-settings-body" id="advancedSettingsBody">
+                        <p class="settings-desc">Enable this to search for colleges within a specific, custom merit rank range instead of the automated dynamic range.</p>
+                        <div class="range-inputs-grid">
+                            <div class="input-group">
+                                <label for="minRankRange"><i class="fa-solid fa-arrow-down-1-9"></i> Min Rank</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="minRankRange" placeholder="e.g. 30000" min="1" required>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="maxRankRange"><i class="fa-solid fa-arrow-up-9-1"></i> Max Rank</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="maxRankRange" placeholder="e.g. 40000" min="1" required>
                                 </div>
                             </div>
                         </div>
@@ -209,9 +256,26 @@
                         </div>
                         <p>Optimized individual branch options closest to your merit rank & percentile, sorted by admission probability</p>
                     </div>
-                    <button id="downloadExcelBtn" class="btn" style="padding: 12px 24px; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, #107c41 0%, #0b592e 100%); color: white; border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(16, 124, 65, 0.3); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.3s ease;">
-                        <i class="fa-solid fa-file-excel" style="font-size: 1.1rem;"></i> <span>Download Excel format</span>
-                    </button>
+                    <div class="header-actions-row">
+                        <div class="limit-selector-wrapper hidden" id="limitSelectorWrapper">
+                            <span class="limit-label"><i class="fa-solid fa-list-ol"></i> Show List Limit:</span>
+                            <div class="custom-select-wrapper">
+                                <select id="listLimitSelect" class="list-limit-select">
+                                    <option value="40">Top 40 Ranks (Default)</option>
+                                    <option value="60">Top 60 Ranks</option>
+                                    <option value="100">Top 100 Ranks</option>
+                                    <option value="500">All Ranks</option>
+                                </select>
+                                <span class="select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                            </div>
+                        </div>
+                        <button id="downloadExcelBtn" class="btn" style="padding: 12px 24px; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, #107c41 0%, #0b592e 100%); color: white; border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(16, 124, 65, 0.3); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-file-excel" style="font-size: 1.1rem;"></i> <span>Download Excel format</span>
+                        </button>
+                        <button id="printOptionFormBtn" class="btn btn-print-option" type="button">
+                            <i class="fa-solid fa-print"></i> <span>Print Option Form</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="matches-list-container card">
