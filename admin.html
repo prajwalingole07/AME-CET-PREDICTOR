@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Portal - AME Engineering Latur</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body{background:linear-gradient(180deg,#0a0e1a,#0f1425);color:#fff;font-family:Segoe UI,system-ui,Arial;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0;overflow-x:hidden;overflow-y:auto;}
+    .admin-card{width:100%;max-width:860px;background:#0e1629;padding:28px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+    h1{margin:0 0 6px 0}
+    .login-row{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    input{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#fff;min-width:0}
+    .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,#ff9a00,#ff6a00);color:#fff}
+    .users-list{margin-top:18px}
+    .user-row{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:8px;gap:12px}
+    @media (max-width: 840px) {
+      .admin-card{padding:24px;}
+      .login-row{flex-direction:column;align-items:stretch;gap:12px;}
+      .login-row input{width:100%;}
+      .admin-card > div[style*="display:flex;gap:10px"]{flex-direction:column;align-items:stretch;}
+      .admin-card > div[style*="display:flex;gap:10px"] .btn{width:100%;}
+      .user-row{flex-direction:column;align-items:flex-start;}
+    }
+    @media (max-width: 560px) {
+      body{padding:16px;}
+      .admin-card{padding:20px;}
+      h1{font-size:1.75rem;}
+      .login-row input{font-size:0.95rem;}
+      .btn{width:100%;padding:12px 14px;}
+      .user-row{padding:12px;}
+      .admin-card div[style*="flex:0 0 320px"]{flex:1;min-width:0;}
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-card">
+    <h1>Admin Portal</h1>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px">
+      <a href="predictor.html" class="btn btn-primary" style="text-decoration:none;display:inline-block">Open Main Page</a>
+      <button id="adminLogoutBtn" class="btn" style="background:rgba(255,255,255,0.08);color:#fff">Logout</button>
+    </div>
+    
+    <div class="login-row">
+      <input id="adminUsername" placeholder="Admin username" value="Ame2026">
+      <input id="adminPassword" placeholder="Password" type="password" value="">
+      <button id="adminLoginBtnLocal" class="btn btn-primary">Sign In</button>
+    </div>
+
+    <div id="adminArea" style="display:none">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 320px">
+          <h2 style="margin-top:6px">Add New Student</h2>
+          <div style="margin-top:12px">
+            <label style="font-size:13px;color:#bfc7d4">Student Name</label>
+            <input id="newStudentName" placeholder="Enter student name" style="width:100%;margin-top:8px">
+          </div>
+          <div style="margin-top:12px">
+            <label style="font-size:13px;color:#bfc7d4">Student Mobile</label>
+            <input id="newStudentMobile" type="tel" inputmode="numeric" pattern="\d{10}" maxlength="10" placeholder="Enter 10-digit mobile number" style="width:100%;margin-top:8px">
+          </div>
+          <div style="margin-top:16px">
+            <button id="addStudentBtn" class="btn btn-primary" style="width:100%">Add Student</button>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:280px">
+          <h2 style="margin-top:6px">Manage Students</h2>
+          <div id="adminUsersList" class="users-list" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AUTH_ADMIN_USERNAME = 'Ame2026';
+    const AUTH_ADMIN_PASSWORD = 'Ame@2026#';
+    const USER_STORAGE_KEY = 'ame_users';
+
+    function getCurrentUser(){
+      try{ const saved = localStorage.getItem('ame_current_user'); return saved ? JSON.parse(saved) : null; }catch(e){ return null; }
+    }
+
+    function requireAdmin(){
+      const current = getCurrentUser();
+      if(!current || current.role !== 'admin'){
+        window.location.replace('login.html');
+        return false;
+      }
+      return true;
+    }
+
+    function loadUsers(){ try{ const r = localStorage.getItem(USER_STORAGE_KEY); return r ? JSON.parse(r) : []; }catch(e){ return []; } }
+    function saveUsers(u){ localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(u)); }
+
+    function renderAdminUsersList(){
+      const container = document.getElementById('adminUsersList');
+      const users = loadUsers();
+      if (!users || users.length === 0){ container.innerHTML = '<p style="color:#bbb">No registrations yet.</p>'; return; }
+      container.innerHTML = '';
+      users.forEach(u => {
+        const row = document.createElement('div'); row.className = 'user-row';
+        const left = document.createElement('div'); left.innerHTML = `<strong>${u.name}</strong><div style="font-size:12px;color:#ccc">${u.mobile} ${u.transactionId ? '— TXN:'+u.transactionId : ''} — Paid: ${u.paid ? 'Yes' : 'No'} — Approved: ${u.approved ? 'Yes' : 'No'}</div>`;
+        const right = document.createElement('div');
+        // Approve / Revoke button
+        const approveBtn = document.createElement('button'); approveBtn.className='btn'; approveBtn.style.marginRight='8px';
+        approveBtn.textContent = u.approved ? 'Revoke' : 'Approve';
+        approveBtn.addEventListener('click', () => {
+          const all = loadUsers(); const target = all.find(x=>x.mobile===u.mobile); if(!target) return;
+          // Toggle approval. When approving, also mark as paid so the student can log in.
+          target.approved = !target.approved;
+          if (target.approved) target.paid = true;
+          saveUsers(all); renderAdminUsersList();
+        });
+        // Delete button
+        const deleteBtn = document.createElement('button'); deleteBtn.className='btn'; deleteBtn.style.marginRight='0px'; deleteBtn.style.background='#e23b3b'; deleteBtn.style.color='#fff';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          if(!confirm('Delete student ' + u.name + ' ('+u.mobile+')? This cannot be undone.')) return;
+          let all = loadUsers(); all = all.filter(x=>x.mobile!==u.mobile); saveUsers(all); renderAdminUsersList();
+        });
+        right.appendChild(approveBtn);
+        right.appendChild(deleteBtn);
+        row.appendChild(left); row.appendChild(right); container.appendChild(row);
+      });
+    }
+
+    // helper functions
+    function addStudentRecord(name,mobile){
+      const users = loadUsers();
+      if(users.find(u=>u.mobile===mobile)) return false;
+      // When admin adds a student manually, mark paid and approved so they can login immediately
+      users.push({name,mobile,password:'Engg@2026',paid:true,transactionId:null,approved:true});
+      saveUsers(users); return true;
+    }
+
+    document.getElementById('addStudentBtn').addEventListener('click', ()=>{
+      const name = document.getElementById('newStudentName').value.trim();
+      const mobile = document.getElementById('newStudentMobile').value.trim();
+      if(!name||!/^\d{10}$/.test(mobile)) return alert('Please provide valid name and 10-digit mobile');
+      const ok = addStudentRecord(name,mobile);
+      if(!ok) return alert('Student with this mobile already exists');
+      document.getElementById('newStudentName').value = '';
+      document.getElementById('newStudentMobile').value = '';
+      renderAdminUsersList();
+      alert('Student added and approved (password: Engg@2026). Student may now login.');
+    });
+
+    document.getElementById('adminLoginBtnLocal').addEventListener('click', ()=>{
+      const user = document.getElementById('adminUsername').value.trim();
+      const pass = document.getElementById('adminPassword').value.trim();
+      if(user===AUTH_ADMIN_USERNAME && pass===AUTH_ADMIN_PASSWORD){
+        // mark admin session so main app can detect
+        try{ localStorage.setItem('ame_current_user', JSON.stringify({role:'admin',name:'Admin'})); }catch(e){}
+        document.getElementById('adminArea').style.display='block';
+        renderAdminUsersList();
+      } else {
+        alert('Invalid admin credentials');
+      }
+    });
+
+    document.getElementById('adminLogoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('ame_current_user');
+      window.location.href = 'login.html';
+    });
+
+    // If already logged in as admin (from main app), show admin area immediately
+    try{
+      const saved = localStorage.getItem('ame_current_user');
+      if(saved){ const s = JSON.parse(saved); if(s && s.role==='admin'){ document.getElementById('adminArea').style.display='block'; renderAdminUsersList(); } }
+    }catch(e){}
+
+    requireAdmin();
+
+    // add password visibility toggle for admin page
+    (function addPwToggle(){
+      const s = document.createElement('style');
+      s.textContent = '.password-wrapper{position:relative;display:inline-block;width:100%}.password-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;cursor:pointer;padding:6px}';
+      document.head.appendChild(s);
+      const pw = document.querySelector('input[type="password"]');
+      if(!pw) return;
+      if(pw.closest('.password-wrapper')) return;
+      const wrap = document.createElement('div'); wrap.className='password-wrapper';
+      pw.parentNode.insertBefore(wrap,pw); wrap.appendChild(pw);
+      pw.style.paddingRight='44px';
+      const btn = document.createElement('button'); btn.type='button'; btn.className='password-toggle'; btn.innerHTML='<i class="fa-regular fa-eye"></i>';
+      btn.addEventListener('click', ()=>{ if(pw.type==='password'){ pw.type='text'; btn.innerHTML='<i class="fa-regular fa-eye-slash"></i>' } else { pw.type='password'; btn.innerHTML='<i class="fa-regular fa-eye"></i>' } pw.focus(); });
+      wrap.appendChild(btn);
+    })();
+    
+  </script>
+</body>
+</html>

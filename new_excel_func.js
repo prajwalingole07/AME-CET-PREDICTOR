@@ -1,4 +1,4 @@
-function downloadExcelReport(studentName) {
+﻿function downloadExcelReport(studentName) {
     if (typeof XLSX === 'undefined') {
         alert("Excel export library is loading, please try again in a moment.");
         return;
