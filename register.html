@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Register - AME Engineering Latur</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root{
+            --bg-dark:#0a0e1a;
+            --bg-darker:#050810;
+            --accent-orange:#ff9a00;
+            --accent-orange-dark:#ff6a00;
+            --text-white:#fff;
+            --text-muted:#c3cbd8;
+            --border-glass:rgba(255,255,255,.08);
+        }
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body{
+            font-family:Inter,Segoe UI,Arial,sans-serif;
+            background:radial-gradient(circle at 12% 10%,rgba(255,154,0,.14),transparent 25%),
+                       radial-gradient(circle at 88% 18%,rgba(0,240,255,.12),transparent 22%),
+                       linear-gradient(180deg,var(--bg-dark),var(--bg-darker));
+            color:#fff;
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:24px;
+            overflow-x:hidden;
+            overflow-y:auto;
+            position:relative;
+            line-height:1.5;
+        }
+
+        .register-container{
+            width:100%;
+            max-width:960px;
+            margin:0 auto;
+            position:relative;
+            z-index:1;
+            padding:20px 0;
+        }
+
+        .register-container::before{
+            content:'';
+            position:absolute;
+            top:20px;
+            left:50%;
+            width:420px;
+            height:420px;
+            transform:translateX(-50%);
+            background:url('logo.png') center/contain no-repeat;
+            opacity:0.06;
+            filter:blur(1px);
+            pointer-events:none;
+        }
+
+        .register-card{
+            background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+            border:1px solid rgba(255,255,255,.14);
+            border-radius:30px;
+            padding:44px 42px;
+            box-shadow:0 30px 80px rgba(0,0,0,.55);
+            backdrop-filter:blur(28px);
+            -webkit-backdrop-filter:blur(28px);
+            position:relative;
+            z-index:2;
+        }
+
+        .register-header{
+            text-align:center;
+            margin-bottom:34px;
+            padding:0 8px;
+        }
+
+        .register-header h2{
+            font-size:clamp(2rem, 3vw, 2.8rem);
+            font-weight:800;
+            margin-bottom:10px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:12px;
+            color:#fff;
+        }
+
+        .register-header h2 i,
+        .highlight{
+            color:var(--accent-orange);
+        }
+
+        .subtitle{
+            color:var(--text-muted);
+            font-size:clamp(0.95rem, 1.6vw, 1.05rem);
+            line-height:1.75;
+            max-width:760px;
+            margin:0 auto;
+        }
+
+        .register-content{
+            display:flex;
+            gap:34px;
+            align-items:flex-start;
+            flex-wrap:wrap;
+        }
+
+        .qr-section{
+            flex:0 0 320px;
+            min-width:260px;
+            text-align:center;
+            position:relative;
+            z-index:1;
+        }
+
+        .qr-section img{
+            width:100%;
+            max-width:320px;
+            border-radius:22px;
+            box-shadow:0 16px 40px rgba(0,0,0,.35);
+            margin-bottom:16px;
+            border:1px solid rgba(255,255,255,.12);
+        }
+
+        .qr-text{
+            color:var(--text-muted);
+            font-size:clamp(0.92rem, 1.5vw, 1rem);
+            line-height:1.8;
+            margin:0 auto;
+            max-width:320px;
+        }
+
+        .qr-text i{
+            color:var(--accent-orange);
+            margin-right:8px;
+        }
+
+        .form-section{
+            flex:1;
+            min-width:320px;
+        }
+
+        .form-group{
+            margin-bottom:20px;
+        }
+
+        .form-group label{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-size:0.82rem;
+            font-weight:800;
+            color:var(--text-muted);
+            text-transform:uppercase;
+            letter-spacing:.5px;
+            margin-bottom:10px;
+        }
+
+        .form-group label i{
+            color:var(--accent-orange);
+            filter:drop-shadow(0 0 10px rgba(255,154,0,.34));
+            animation:iconPulse 2.6s ease-in-out infinite;
+        }
+
+        .form-group input{
+            width:100%;
+            padding:16px 20px;
+            border-radius:16px;
+            border:1px solid var(--border-glass);
+            background:rgba(255,255,255,.05);
+            color:#fff;
+            font-size:1rem;
+            font-weight:600;
+            outline:none;
+            transition:all .3s ease;
+        }
+
+        .form-group input:focus{
+            border-color:var(--accent-orange);
+            box-shadow:0 0 0 5px rgba(255,154,0,.1);
+            background:rgba(255,255,255,.08);
+        }
+
+        .checkbox-label{
+            display:flex!important;
+            align-items:center;
+            gap:10px;
+            cursor:pointer;
+            font-size:0.96rem!important;
+            text-transform:none!important;
+            letter-spacing:0!important;
+            color:var(--text-muted);
+        }
+
+        .checkbox-label input{
+            width:auto;
+            accent-color:var(--accent-orange);
+        }
+
+        .button-group{
+            display:flex;
+            gap:14px;
+            margin-top:28px;
+            flex-wrap:wrap;
+        }
+
+        .btn{
+            flex:1;
+            padding:16px 20px;
+            border-radius:16px;
+            border:none;
+            font-size:1rem;
+            font-weight:800;
+            cursor:pointer;
+            transition:all .3s ease;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:10px;
+            min-width:160px;
+        }
+
+        .btn-primary{
+            background:linear-gradient(90deg,var(--accent-orange),var(--accent-orange-dark));
+            color:#fff;
+            box-shadow:0 14px 40px rgba(255,154,0,.24);
+        }
+
+        .btn-secondary{
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.14);
+            color:#fff;
+        }
+
+        .btn:hover{
+            transform:translateY(-2px);
+        }
+
+        .login-link{
+            text-align:center;
+            margin-top:28px;
+            padding-top:24px;
+            border-top:1px solid rgba(255,255,255,.12);
+        }
+
+        .login-link p{
+            color:var(--text-muted);
+            font-size:0.95rem;
+        }
+
+        .login-link a{
+            color:var(--accent-orange);
+            text-decoration:none;
+            font-weight:800;
+        }
+
+        @keyframes iconPulse{
+            0%,100%{transform:scale(1)}
+            50%{transform:scale(1.12)}
+        }
+
+        @media (max-width:1024px) {
+            .register-card{
+                padding:34px 28px;
+            }
+
+            .register-content{
+                gap:24px;
+            }
+
+            .qr-section{
+                flex:0 0 280px;
+            }
+        }
+
+        @media (max-width:820px) {
+            body{
+                padding:18px;
+            }
+
+            .register-card{
+                padding:30px 22px;
+            }
+
+            .register-content,
+            .button-group{
+                flex-direction:column;
+            }
+
+            .qr-section{
+                flex:none;
+                width:100%;
+                max-width:100%;
+                margin:0 auto;
+            }
+
+            .register-header h2{
+                font-size:2.3rem;
+            }
+
+            .subtitle,
+            .qr-text,
+            .login-link p{
+                font-size:0.96rem;
+            }
+
+            .btn{
+                width:100%;
+                min-width:0;
+            }
+        }
+
+        @media (max-width:580px) {
+            .register-card{
+                padding:26px 18px;
+            }
+
+            .register-header h2{
+                gap:8px;
+            }
+
+            .form-group label{
+                font-size:0.78rem;
+            }
+
+            .form-group input{
+                padding:14px 16px;
+                font-size:0.95rem;
+            }
+
+            .button-group{
+                gap:12px;
+            }
+
+            .qr-section img{
+                max-width:100%;
+            }
+
+            .checkbox-label{
+                font-size:0.92rem!important;
+            }
+        }
+
+        @media (max-width:480px) {
+            .register-card{
+                padding:22px 16px;
+            }
+
+            .register-header h2{
+                font-size:1.95rem;
+                gap:6px;
+            }
+
+            .subtitle,
+            .qr-text,
+            .login-link p{
+                font-size:0.92rem;
+            }
+
+            .form-group label{
+                font-size:0.75rem;
+            }
+
+            .form-group input{
+                padding:12px 14px;
+                font-size:0.9rem;
+            }
+
+            .button-group{
+                gap:10px;
+            }
+
+            .qr-section{
+                padding:0 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                    <h2><i class="fa-solid fa-user-plus"></i> Student Registration</h2>
+                    <p class="subtitle"><span class="highlight">Pay ₹200 to enroll</span> - Use PhonePe/Paytm/Google Pay to <strong>+91 9146597830</strong></p>
+            </div>
+            
+            <div class="register-content">
+                <div class="qr-section">
+                    <img src="upi-qr.png" alt="Payment QR Code">
+                    <p class="qr-text"><i class="fa-solid fa-qrcode"></i> Scan QR or pay to 9146597830</p>
+                    <p class="qr-text" style="margin-top: 8px;"><i class="fa-brands fa-whatsapp"></i> After payment, share the screenshot on WhatsApp for verification.</p>
+                </div>
+                
+                <div class="form-section">
+                    <form id="studentRegisterForm">
+                        <div class="form-group">
+                            <label for="studentNameReg"><i class="fa-solid fa-user"></i> FULL NAME</label>
+                            <input id="studentNameReg" placeholder="Your full name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="studentMobileReg"><i class="fa-solid fa-mobile-screen-button"></i> MOBILE NUMBER</label>
+                            <input id="studentMobileReg" placeholder="Enter 10-digit mobile number" type="tel" inputmode="numeric" pattern="\d{10}" maxlength="10" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="studentTransactionReg"><i class="fa-solid fa-receipt"></i> TRANSACTION ID</label>
+                            <input id="studentTransactionReg" placeholder="e.g. TXN123456789 or reference ID">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="studentPaidReg" required>
+                                I Have Paid ₹200 To +91 9146597830
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="studentVerifiedReg" required>
+                                <strong>I Have Verified That The Mobile Number And Name Are Correct</strong>
+                            </label>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" id="verifyPaymentBtn" class="btn btn-secondary"><i class="fa-brands fa-whatsapp"></i> Verify Payment on WhatsApp</button>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Register & Chat</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="login-link">
+                <p>Already have an account? <a href="login.html">Go to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const USER_STORAGE_KEY = 'ame_users';
+        function loadUsers(){ try{ const r = localStorage.getItem(USER_STORAGE_KEY); return r ? JSON.parse(r) : []; }catch(e){ return []; } }
+        function saveUsers(u){ localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(u)); }
+
+        document.getElementById('verifyPaymentBtn').addEventListener('click', () => {
+            const name = document.getElementById('studentNameReg').value.trim();
+            const mobile = document.getElementById('studentMobileReg').value.trim();
+            const paidChecked = !!document.getElementById('studentPaidReg').checked;
+            const verifiedChecked = !!document.getElementById('studentVerifiedReg').checked;
+            const txn = document.getElementById('studentTransactionReg')?.value.trim() || '';
+            if (!name || !mobile) return alert('Please enter name and mobile number before verifying payment.');
+            if (!/^\d{10}$/.test(mobile)) return alert('Mobile number must be 10 digits');
+            if (!paidChecked) return alert('Please confirm that you have paid ₹200');
+            if (!verifiedChecked) return alert('Please verify the mobile number and name before sending on WhatsApp.');
+            const users = loadUsers();
+            if (!users.find(u => u.mobile === mobile)) {
+                users.push({ name, mobile, password: 'Engg@2026', paid: true, transactionId: txn || null, approved: false });
+                saveUsers(users);
+            }
+            const msg = `Hello AME Engineering Latur, I have paid  ₹200.\nName: ${name}\nMobile: ${mobile}\nTransaction ID: ${txn}\nI am attaching the payment screenshot for verification.`;
+            const wa = 'https://wa.me/919146597830?text=' + encodeURIComponent(msg);
+            window.open(wa, '_blank');
+            alert('WhatsApp opened. Please attach the payment screenshot and send the message.');
+        });
+
+        document.getElementById('studentRegisterForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('studentNameReg').value.trim();
+            const mobile = document.getElementById('studentMobileReg').value.trim();
+            const paidChecked = !!document.getElementById('studentPaidReg').checked;
+            const verifiedChecked = !!document.getElementById('studentVerifiedReg').checked;
+            const transactionId = document.getElementById('studentTransactionReg').value.trim();
+            if (!name || !mobile) return alert('Please fill all required fields');
+            if (!/^\d{10}$/.test(mobile)) return alert('Mobile number must be 10 digits');
+            if (!paidChecked) return alert('Please confirm that you have paid  ₹200');
+            if (!verifiedChecked) return alert('Please verify and check the mobile number and name before submitting.');
+            const users = loadUsers();
+            if (users.find(u => u.mobile === mobile)) {
+                const msgExists = `Hello AME Engineering Latur, I have paid  ₹200.\nName: ${name}\nMobile: ${mobile}\nTransaction ID: ${transactionId}\nI am attaching the payment screenshot for verification.`;
+                window.open('https://wa.me/919146597830?text=' + encodeURIComponent(msgExists), '_blank');
+                alert('You are already registered. WhatsApp opened for payment verification.');
+                return;
+            }
+            users.push({ name, mobile, password: 'Engg@2026', paid: true, transactionId: transactionId || null, approved: false });
+            saveUsers(users);
+            const msg = `Hello AME Engineering Latur, I have paid  ₹200.\nName: ${name}\nMobile: ${mobile}\nTransaction ID: ${transactionId}\nI am attaching the payment screenshot for verification.`;
+            window.open('https://wa.me/919146597830?text=' + encodeURIComponent(msg), '_blank');
+            alert('Registration recorded. WhatsApp has been opened for payment confirmation and admin approval.');
+            document.getElementById('studentNameReg').value = '';
+            document.getElementById('studentMobileReg').value = '';
+            document.getElementById('studentTransactionReg').value = '';
+            document.getElementById('studentPaidReg').checked = false;
+            document.getElementById('studentVerifiedReg').checked = false;
+        });
+    </script>
+</body>
+</html>
