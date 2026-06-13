@@ -947,10 +947,10 @@ function performPrediction(rank, percentile, gender, category) {
                         let helper = 3;
 
                         if (maxRank !== null) {
-                            if (maxRank <= rank * 0.8) {
+                            if (maxRank < rank - 500) {
                                 status = "DREAM";
                                 helper = 1;
-                            } else if (maxRank <= rank * 1.2) {
+                            } else if (maxRank >= rank - 500 && maxRank <= rank) {
                                 status = "MEDIUM CHANCES";
                                 helper = 2;
                             } else {
@@ -1128,7 +1128,12 @@ function performPrediction(rank, percentile, gender, category) {
         return bPerc - aPerc; // higher percentile first
     };
 
-    const isMainRecommendation = item => item.chance !== 'DREAM' && !topCollegeCodes.includes(item.collegeCode);
+    const isMainRecommendation = item => {
+        if (useCustomRange && useCustomRange.checked) {
+            return !topCollegeCodes.includes(item.collegeCode);
+        }
+        return item.chance !== 'DREAM' && !topCollegeCodes.includes(item.collegeCode);
+    };
     const targetCandidates = matchedBranchesList.filter(isMainRecommendation);
 
     if (useCustomRange && useCustomRange.checked) {
@@ -1166,7 +1171,7 @@ function performPrediction(rank, percentile, gender, category) {
         while (true) {
             selectedTargets = targetCandidates.filter(item => {
                 if (item.maxRank !== null) {
-                    return item.maxRank >= rank && item.maxRank <= rank + threshold;
+                    return item.maxRank >= rank - 500 && item.maxRank <= rank + threshold;
                 } else if (item.minPerc !== null) {
                     const percThreshold = 2.5 + ((threshold - 1500) / 1000) * 1.5;
                     return item.minPerc >= percentile - percThreshold && item.minPerc <= percentile;
@@ -1284,10 +1289,10 @@ function evaluateEligibility(studentRank, studentPercentile, cutoffs) {
                 eligible = true;
             }
             
-            if (cutoffRank >= studentRank * 1.2) {
+            if (cutoffRank > studentRank) {
                 chance = 'HIGHER CHANCES';
                 chanceScore = Math.max(chanceScore, 3);
-            } else if (cutoffRank >= studentRank * 0.8) {
+            } else if (cutoffRank >= studentRank - 500) {
                 chance = 'MEDIUM CHANCES';
                 chanceScore = Math.max(chanceScore, 2);
             } else {
@@ -1665,8 +1670,8 @@ function buildExcelAutoRowHeights(data, colWidths, rowCount) {
 }
 
 // Generate and Download Excel Report - Formatted to match MH CET OPTION ANALYSIS FORM layout
-function downloadExcelReport(studentName) {
-    if (typeof XLSX === 'undefined') {
+async function downloadExcelReport(studentName) {
+    if (typeof ExcelJS === 'undefined') {
         alert("Excel export library is loading, please try again in a moment.");
         return;
     }
@@ -1675,288 +1680,252 @@ function downloadExcelReport(studentName) {
         return;
     }
 
-    // ---- Palette ----
-    const NAVY = '12243D';      // bold dark navy headings
-    const TEAL = '0D8A6C';      // accent teal/green
-    const BLACK = '111111';
-    const WHITE = 'FFFFFF';
-    const TBL_HEAD_BG = '12243D';
-    const PURPLE = '6D28D9';    // DREAM
-    const GREEN = '0F766E';     // HIGHER
-    const AMBER = 'B45309';     // MEDIUM
+    try {
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'AME Predictor';
+        wb.created = new Date();
+        
+        const ws = wb.addWorksheet('CET Counselling Predictor', {
+            pageSetup: { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.3, right: 0.3, top: 0.35, bottom: 0.35, header: 0.15, footer: 0.15 } },
+            views: [{ showGridLines: false }]
+        });
 
-    const FONT = 'Calibri';
+        // Column Setup
+        ws.columns = [
+            { width: 14 }, // A SR.NO / label
+            { width: 12 }, // B Inst CODE
+            { width: 38 }, // C INSTITUTE
+            { width: 12 }, // D CITY
+            { width: 14 }, // E Branch Code / label
+            { width: 32 }, // F BRANCH NAME / value
+            { width: 14 }, // G CATEGORY
+            { width: 11 }, // H MAX Rank
+            { width: 12 }  // I STATUS
+        ];
 
-    const today = new Date();
-    const dateStr = today.getDate() + " " + today.toLocaleString('default', { month: 'short' }) + " " + today.getFullYear();
-    const citiesStr = selectedCities.length > 0 ? selectedCities.map(formatString).join(", ") : "ALL";
-    const branchesStr = selectedBranches.length > 0 ? selectedBranches.join(", ") : "ALL";
-
-    let performance = "Average";
-    if (currentPercentile >= 99) performance = "Top Tier";
-    else if (currentPercentile >= 95) performance = "Excellent";
-    else if (currentPercentile >= 90) performance = "Very Good";
-    else if (currentPercentile >= 80) performance = "Good";
-
-    // 9 columns: A..I
-    // A: SR.NO/labels  B: Inst CODE  C: INSTITUTE  D: CITY  E: Branch Code/lbl
-    // F: BRANCH NAME/val  G: CATEGORY/lbl  H: MAX Rank/val  I: STATUS
-    const data = [];
-
-    // Row 1: title + student name
-    data.push([null, "MH CET OPTION  ANALYSIS FORM", null, "OF", studentName, null, null, null, null]);
-    // Row 2: generated on + GENDER
-    data.push([null, null, "Generated on: " + dateStr, null, "GENDER", currentGender, null, null, null]);
-    // Row 3: CITIES + CATEGORY
-    data.push(["CITIES", citiesStr, null, null, "CATEGORY", currentCategory, null, null, null]);
-    // Row 4: BRANCH GRPS + RANK
-    data.push(["BRANCH GRPS", branchesStr, null, null, "RANK", currentRank, null, null, null]);
-    // Row 5: PERFORMANCE
-    data.push([null, null, null, null, "PERFORMANCE", performance, null, null, null]);
-    // Row 6: spacer
-    data.push([null, null, null, null, null, null, null, null, null]);
-    // Row 7: BASED ON + TOTAL COUNT
-    data.push([null, null, "BASED ON YOUR SCORE THE BEST OPTIONS", null, null, null, "TOTAL COUNT", currentFinalMatches.length, null]);
-    // Row 8: table headers
-    data.push(["SR. NO", "Inst CODE", "INSTITUTE", "CITY", "Branch Code", "BRANCH NAME", "CATEGORY", "MAX Rank", "STATUS"]);
-
-    // Data rows
-    currentFinalMatches.forEach((item, idx) => {
-        data.push([
-            idx + 1,
-            item.collegeCode.toString().padStart(5, '0'),
-            item.collegeName,
-            formatString(item.city),
-            formatBranchCode(item.branchCode),
-            item.branchName,
-            item.cutoffCategory,
-            item.maxRank !== null ? item.maxRank : '--',
-            (item.chance || '').toString().toUpperCase().includes('DREAM') ? 'DREAM'
-                : (item.chance || '').toString().toUpperCase().includes('HIGH') ? 'HIGHER'
-                : (item.chance || '').toString().toUpperCase().includes('MED') ? 'MEDIUM'
-                : (item.chance || 'SAFE').toString().toUpperCase()
-        ]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const rowCount = data.length;
-    const colCount = 9;
-    const getRef = (r, c) => XLSX.utils.encode_cell({ r, c });
-
-    // Border helpers
-    const noBorder = {};
-    const greenTop = {
-        top: { style: 'medium', color: { rgb: TEAL } }
-    };
-    const tblBorder = {
-        top: { style: 'thin', color: { rgb: '94A3B8' } },
-        bottom: { style: 'thin', color: { rgb: '94A3B8' } },
-        left: { style: 'thin', color: { rgb: '94A3B8' } },
-        right: { style: 'thin', color: { rgb: '94A3B8' } }
-    };
-
-    const setStyle = (r, c, s) => {
-        const ref = getRef(r, c);
-        if (!ws[ref]) ws[ref] = { t: 's', v: '' };
-        ws[ref].s = s;
-    };
-
-    // Ensure every cell up to colCount exists so borders/styles render
-    for (let r = 0; r < rowCount; r++) {
-        for (let c = 0; c < colCount; c++) {
-            const ref = getRef(r, c);
-            if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+        // Constants
+        const FONT_NAME = 'Calibri';
+        const BORDER_STYLE = { style: 'thin', color: { argb: 'FFA6A6A6' } };
+        const TBL_BORDER = { top: BORDER_STYLE, left: BORDER_STYLE, bottom: BORDER_STYLE, right: BORDER_STYLE };
+        
+        // Blank setup to row 12
+        for(let i=1; i<=12; i++) {
+            ws.addRow([]);
         }
-    }
 
-    // ----- Row 1: Title + Student name + green top border -----
-    // Top green border applied across row 1 cells
-    for (let c = 0; c < colCount; c++) {
-        setStyle(0, c, {
-            font: { name: FONT, sz: 11, color: { rgb: BLACK } },
-            alignment: { horizontal: 'left', vertical: 'center' },
-            border: greenTop
-        });
-    }
-    // B1: title
-    setStyle(0, 1, {
-        font: { name: FONT, sz: 12, bold: true, color: { rgb: NAVY } },
-        alignment: { horizontal: 'left', vertical: 'center' },
-        border: greenTop
-    });
-    // D1: "OF"
-    setStyle(0, 3, {
-        font: { name: FONT, sz: 11, italic: true, color: { rgb: TEAL } },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: greenTop
-    });
-    // E1: student name
-    setStyle(0, 4, {
-        font: { name: FONT, sz: 12, bold: true, color: { rgb: TEAL } },
-        alignment: { horizontal: 'left', vertical: 'center' },
-        border: greenTop
-    });
+        // Header Labels
+        ws.mergeCells('D1:I1');
+        const titleCell = ws.getCell('D1');
+        titleCell.value = "AME - ADMISSIONS MADE EASY";
+        titleCell.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FFD97706' } };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
 
-    // ----- Row 2: Generated on (C) + GENDER label (E) value (F) -----
-    setStyle(1, 2, {
-        font: { name: FONT, sz: 11, bold: true, color: { rgb: NAVY } },
-        alignment: { horizontal: 'right', vertical: 'center' }
-    });
-    setStyle(1, 4, {
-        font: { name: FONT, sz: 11, bold: true, color: { rgb: NAVY } },
-        alignment: { horizontal: 'right', vertical: 'center' }
-    });
-    setStyle(1, 5, {
-        font: { name: FONT, sz: 11, color: { rgb: BLACK } },
-        alignment: { horizontal: 'left', vertical: 'center' }
-    });
+        ws.mergeCells('D2:I2');
+        const subtitle = ws.getCell('D2');
+        subtitle.value = "MHT-CET Counselling Predictor Report";
+        subtitle.font = { name: FONT_NAME, size: 12, bold: true, color: { argb: 'FF111111' } };
+        subtitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-    // ----- Rows 3-5: CITIES / BRANCH GRPS (col A label, col B value) + CATEGORY/RANK/PERFORMANCE (col E label, col F value) -----
-    const leftLabelRows = [2, 3]; // CITIES, BRANCH GRPS
-    leftLabelRows.forEach(r => {
-        setStyle(r, 0, {
-            font: { name: FONT, sz: 11, bold: true, color: { rgb: NAVY } },
-            alignment: { horizontal: 'left', vertical: 'center' }
-        });
-        setStyle(r, 1, {
-            font: { name: FONT, sz: 11, color: { rgb: BLACK } },
-            alignment: { horizontal: 'left', vertical: 'center', wrapText: true }
-        });
-    });
-    [2, 3, 4].forEach(r => {
-        setStyle(r, 4, {
-            font: { name: FONT, sz: 11, bold: true, color: { rgb: NAVY } },
-            alignment: { horizontal: 'right', vertical: 'center' }
-        });
-        setStyle(r, 5, {
-            font: { name: FONT, sz: 11, color: { rgb: BLACK } },
-            alignment: { horizontal: 'left', vertical: 'center' }
-        });
-    });
+        const today = new Date();
+        const timeStr = today.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateStr = today.getDate() + " " + today.toLocaleString('default', { month: 'short' }) + " " + today.getFullYear() + ", " + timeStr;
 
-    // ----- Row 7: BASED ON ... + TOTAL COUNT -----
-    setStyle(6, 2, {
-        font: { name: FONT, sz: 12, bold: true, color: { rgb: TEAL } },
-        alignment: { horizontal: 'left', vertical: 'center' }
-    });
-    setStyle(6, 6, {
-        font: { name: FONT, sz: 11, bold: true, color: { rgb: NAVY } },
-        alignment: { horizontal: 'right', vertical: 'center' }
-    });
-    setStyle(6, 7, {
-        font: { name: FONT, sz: 12, bold: true, color: { rgb: BLACK } },
-        alignment: { horizontal: 'center', vertical: 'center' }
-    });
+        ws.mergeCells('D3:I3');
+        const dateCell = ws.getCell('D3');
+        dateCell.value = "Generated on: " + dateStr;
+        dateCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF111111' } };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left' };
 
-    // ----- Row 8: Table header (dark navy bg, white bold, centered) -----
-    for (let c = 0; c < colCount; c++) {
-        setStyle(7, c, {
-            font: { name: FONT, sz: 11, bold: true, color: { rgb: WHITE } },
-            fill: { fgColor: { rgb: TBL_HEAD_BG } },
-            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-            border: {
-                top: { style: 'thin', color: { rgb: TBL_HEAD_BG } },
-                bottom: { style: 'thin', color: { rgb: TBL_HEAD_BG } },
-                left: { style: 'thin', color: { rgb: '334155' } },
-                right: { style: 'thin', color: { rgb: '334155' } }
+        ws.mergeCells('D4:I4'); // padding
+
+        // Banner background for D1:I4
+        for (let r = 1; r <= 4; r++) {
+            for (let c = 4; c <= 9; c++) {
+                const cell = ws.getCell(r, c);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+                // Top border for r=1, bottom for r=4, right for c=9
+                let border = {};
+                if (r === 1) border.top = { style: 'thin', color: { argb: 'FF0F766E' } };
+                if (r === 4) border.bottom = { style: 'thin', color: { argb: 'FF0F766E' } };
+                if (c === 9) border.right = { style: 'thin', color: { argb: 'FF0F766E' } };
+                if (Object.keys(border).length > 0) cell.border = border;
             }
-        });
-    }
+        }
 
-    // ----- Data rows -----
-    for (let r = 8; r < rowCount; r++) {
-        const zebra = (r - 8) % 2 === 1 ? 'F8FAFC' : null;
-        for (let c = 0; c < colCount; c++) {
-            const ref = getRef(r, c);
-            const cell = ws[ref];
-            // keep codes as text with leading zeros
-            if (c === 1 || c === 4) {
-                cell.t = 's';
-                cell.z = '@';
-            }
-            let align = 'center';
-            if (c === 2 || c === 5) align = 'left';
-            const style = {
-                font: { name: FONT, sz: 10, color: { rgb: BLACK } },
-                alignment: { horizontal: align, vertical: 'center', wrapText: true },
-                border: tblBorder
+        // Add Logo Image
+        ws.mergeCells('A1:C4');
+        if (typeof LOGO_BASE64 !== 'undefined') {
+            const logoId = wb.addImage({
+                base64: LOGO_BASE64,
+                extension: 'png',
+            });
+            // Adjust coordinates based on columns: A(0), B(1), C(2) - row 0 to 3.
+            ws.addImage(logoId, {
+                tl: { col: 0.1, row: 0.1 },
+                br: { col: 2.9, row: 3.9 },
+                editAs: 'absolute'
+            });
+            // Also set border for the logo placeholder cell area
+            ws.getCell('A1').border = {
+                top: { style: 'thin', color: { argb: 'FF0F766E' } },
+                left: { style: 'thin', color: { argb: 'FF0F766E' } },
+                bottom: { style: 'thin', color: { argb: 'FF0F766E' } }
             };
-            if (zebra) style.fill = { fgColor: { rgb: zebra } };
-            cell.s = style;
+        } else {
+            ws.getCell('A1').value = "(Insert Logo Here)";
+            ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+        }
 
-            // STATUS column color coding
-            if (c === 8) {
-                const v = (cell.v || '').toString().toUpperCase();
-                if (v === 'DREAM') {
-                    cell.s.font = { name: FONT, sz: 10, bold: true, color: { rgb: PURPLE } };
-                    cell.s.fill = { fgColor: { rgb: 'F5F3FF' } };
-                } else if (v === 'HIGHER') {
-                    cell.s.font = { name: FONT, sz: 10, bold: true, color: { rgb: GREEN } };
-                    cell.s.fill = { fgColor: { rgb: 'F0FDF4' } };
-                } else if (v === 'MEDIUM') {
-                    cell.s.font = { name: FONT, sz: 10, bold: true, color: { rgb: AMBER } };
-                    cell.s.fill = { fgColor: { rgb: 'FEF3C7' } };
-                } else {
-                    cell.s.font = { name: FONT, sz: 10, bold: true, color: { rgb: NAVY } };
+        // Row 6: Profile Info Header
+        ws.mergeCells('A6:I6');
+        const profHead = ws.getCell('A6');
+        profHead.value = "STUDENT PROFILE INFO";
+        profHead.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF203764' } };
+        profHead.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDAE3F3' } };
+        profHead.alignment = { vertical: 'middle', horizontal: 'left' };
+        for(let c=1; c<=9; c++) ws.getCell(6, c).border = TBL_BORDER;
+
+        // Profile Data Setup
+        let performance = "Average";
+        if (currentPercentile >= 99) performance = "Top Tier";
+        else if (currentPercentile >= 95) performance = "Excellent";
+        else if (currentPercentile >= 90) performance = "Very Good";
+        else if (currentPercentile >= 80) performance = "Good";
+        
+        const citiesStr = selectedCities.length > 0 ? selectedCities.map(formatString).join(", ") : "ALL";
+        const branchesStr = selectedBranches.length > 0 ? selectedBranches.join(", ") : "ALL";
+
+        const profileData = [
+            ["Student Name:", studentName, "Home State (Eligibility):", "Maharashtra", "Category (Seat Type):", currentCategory],
+            ["MHT-CET Rank:", currentRank, "MHT-CET Percentile:", currentPercentile, "Gender Pool:", currentGender],
+            ["City Prefs:", citiesStr, "Branch Prefs:", branchesStr, "Performance:", performance]
+        ];
+
+        for(let i=0; i<3; i++) {
+            const rowNum = 7 + i;
+            ws.getCell(rowNum, 1).value = profileData[i][0];
+            ws.getCell(rowNum, 1).font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF111111' } };
+            
+            ws.mergeCells(`B${rowNum}:C${rowNum}`);
+            ws.getCell(rowNum, 2).value = profileData[i][1];
+            
+            ws.getCell(rowNum, 4).value = profileData[i][2];
+            ws.getCell(rowNum, 4).font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF111111' } };
+            
+            ws.mergeCells(`E${rowNum}:F${rowNum}`);
+            ws.getCell(rowNum, 5).value = profileData[i][3];
+            
+            ws.getCell(rowNum, 7).value = profileData[i][4];
+            ws.getCell(rowNum, 7).font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF111111' } };
+            
+            ws.mergeCells(`H${rowNum}:I${rowNum}`);
+            ws.getCell(rowNum, 8).value = profileData[i][5];
+
+            for(let c=1; c<=9; c++) {
+                const cell = ws.getCell(rowNum, c);
+                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                cell.border = TBL_BORDER;
+                if(c!==1 && c!==4 && c!==7 && cell.value) {
+                     cell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF111111' } };
                 }
             }
         }
+
+        // Row 11: Recommendations Header
+        ws.mergeCells('A11:I11');
+        const recHead = ws.getCell('A11');
+        recHead.value = "RECOMMENDED COUNSELLING OPTIONS";
+        recHead.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF203764' } };
+        recHead.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDAE3F3' } };
+        recHead.alignment = { vertical: 'middle', horizontal: 'left' };
+        for(let c=1; c<=9; c++) ws.getCell(11, c).border = TBL_BORDER;
+
+        // Row 12: Table Headers
+        const headers = ["SR. NO", "Inst CODE", "INSTITUTE", "CITY/STATE", "Branch Code", "BRANCH NAME", "CATEGORY", "MAX Rank", "STATUS"];
+        const headerRow = ws.getRow(12);
+        headerRow.values = headers;
+        headerRow.height = 30;
+        for(let c=1; c<=9; c++) {
+            const cell = headerRow.getCell(c);
+            cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF12243D' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            cell.border = TBL_BORDER;
+        }
+
+        // Data Rows
+        currentFinalMatches.forEach((item, idx) => {
+            const row = ws.addRow([
+                idx + 1,
+                item.collegeCode.toString().padStart(5, '0'),
+                item.collegeName,
+                formatString(item.city) + ", Maharashtra",
+                formatBranchCode(item.branchCode),
+                item.branchName,
+                item.cutoffCategory,
+                item.maxRank !== null ? item.maxRank : '--',
+                (item.chance || '').toString().toUpperCase().includes('DREAM') ? 'DREAM'
+                    : (item.chance || '').toString().toUpperCase().includes('HIGH') ? 'HIGHER'
+                    : (item.chance || '').toString().toUpperCase().includes('MED') ? 'MEDIUM'
+                    : (item.chance || 'SAFE').toString().toUpperCase()
+            ]);
+            
+            row.height = 32;
+            for(let c=1; c<=9; c++) {
+                const cell = row.getCell(c);
+                cell.border = TBL_BORDER;
+                cell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF111111' } };
+                cell.alignment = { vertical: 'middle', horizontal: (c===3 || c===6) ? 'left' : 'center', wrapText: true };
+                
+                // Status Color Formatting
+                if (c === 9) {
+                    const v = cell.value;
+                    if (v === 'DREAM') {
+                        cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF6D28D9' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F3FF' } };
+                    } else if (v === 'HIGHER') {
+                        cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF0F766E' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+                    } else if (v === 'MEDIUM') {
+                        cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFB45309' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+                    } else {
+                        cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF12243D' } };
+                    }
+                }
+            }
+        });
+
+        // Set row heights for top rows
+        ws.getRow(1).height = 26;
+        ws.getRow(2).height = 22;
+        ws.getRow(3).height = 22;
+        ws.getRow(4).height = 22;
+        ws.getRow(5).height = 10;
+        ws.getRow(6).height = 24;
+        ws.getRow(7).height = 22;
+        ws.getRow(8).height = 22;
+        ws.getRow(9).height = 22;
+        ws.getRow(10).height = 10;
+        ws.getRow(11).height = 24;
+
+        let safeName = (studentName || 'Student').replace(/[^a-zA-Z0-9]/g, '_');
+        const fileName = "MH_CET_Predictor_" + safeName + ".xlsx";
+        
+        // Write file
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+    } catch(err) { 
+        alert("Excel Error: " + err.message); 
+        console.error(err); 
     }
-
-    // ----- Merges -----
-    ws['!merges'] = [
-        // Title spans B1:C1
-        { s: { r: 0, c: 1 }, e: { r: 0, c: 2 } },
-        // Student name spans E1:I1
-        { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
-        // Generated on spans C2:D2 (right aligned within)
-        { s: { r: 1, c: 2 }, e: { r: 1, c: 3 } },
-        // CITIES value spans B3:D3
-        { s: { r: 2, c: 1 }, e: { r: 2, c: 3 } },
-        // BRANCH GRPS value spans B4:D4
-        { s: { r: 3, c: 1 }, e: { r: 3, c: 3 } },
-        // BASED ON spans C7:F7
-        { s: { r: 6, c: 2 }, e: { r: 6, c: 5 } }
-    ];
-
-    // ----- Column widths (matching image) -----
-    ws['!cols'] = [
-        { wch: 14 },  // A SR.NO / label
-        { wch: 12 },  // B Inst CODE
-        { wch: 38 },  // C INSTITUTE
-        { wch: 12 },  // D CITY
-        { wch: 14 },  // E Branch Code / label
-        { wch: 32 },  // F BRANCH NAME / value
-        { wch: 14 },  // G CATEGORY
-        { wch: 11 },  // H MAX Rank
-        { wch: 12 }   // I STATUS
-    ];
-
-    // ----- Row heights -----
-    const rows = [];
-    rows[0] = { hpx: 26 };  // title
-    rows[1] = { hpx: 22 };
-    rows[2] = { hpx: 22 };
-    rows[3] = { hpx: 22 };
-    rows[4] = { hpx: 22 };
-    rows[5] = { hpx: 10 };  // spacer
-    rows[6] = { hpx: 24 };  // BASED ON
-    rows[7] = { hpx: 30 };  // table header
-    for (let r = 8; r < rowCount; r++) rows[r] = { hpx: 32 };
-    ws['!rows'] = rows;
-
-    // Print setup
-    ws['!margins'] = { left: 0.3, right: 0.3, top: 0.35, bottom: 0.35, header: 0.15, footer: 0.15 };
-    ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
-    ws['!sheetProperties'] = { pageSetUpPr: { fitToPage: true } };
-    ws['!sheetViews'] = [{ showGridLines: false }];
-    ws['!views'] = [{ showGridLines: false }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Option Analysis Form");
-
-    const sanitizedName = studentName.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_') || 'Student';
-    XLSX.writeFile(wb, `AME_College_Recommendations_${sanitizedName}_${currentRank}.xlsx`);
 }
 
 function formatBranchCode(branchCode) {
